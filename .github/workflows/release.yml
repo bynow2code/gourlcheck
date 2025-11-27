@@ -29,13 +29,13 @@ jobs:
     # 步骤序列（按顺序执行的一系列任务）
     steps:
       # 步骤1：将代码仓库克隆到虚拟机中
-      - name: 切分支
+      - name: 检出代码仓库
         # 使用GitHub官方的checkout Action来获取代码
         # 这个Action会将你的代码仓库克隆到虚拟机的workspace目录
         uses: actions/checkout@main
 
       # 步骤2：在虚拟机中安装Go编程语言环境
-      - name: 安装go环境
+      - name: 设置 Go 环境
         # 使用GitHub官方的setup-go Action来安装Go
         uses: actions/setup-go@v6
         with:
