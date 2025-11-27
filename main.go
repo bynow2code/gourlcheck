@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
@@ -19,8 +20,21 @@ type CheckResult struct {
 func main() {
 	concurrency := flag.Int("c", 5, "并发数（默认5）")
 	timeout := flag.Int("t", 5, "超时时间（秒，默认5）")
+	inputFile := flag.String("f", "", "URL列表文件路径（每行一个URL）")
 	flag.Parse()
-	urls := flag.Args()
+
+	var urls []string
+	var err error
+	if *inputFile != "" {
+		urls, err = readURLsFromFile(*inputFile)
+		if err != nil {
+			fmt.Printf("读取文件错误：[%s]", err)
+			return
+		}
+	} else {
+		urls = flag.Args()
+	}
+
 	if len(urls) == 0 {
 		fmt.Println("请传入要检测的URL，示例：go run main.go https://baidu.com https://github.com")
 		return
@@ -52,6 +66,42 @@ func main() {
 	for result := range resultCh {
 		fmt.Printf("url:[%s] code:[%d] cost:[%d] errmsg:[%s]\n", result.Url, result.Code, result.Cost, result.ErrMsg)
 	}
+}
+
+func readURLsFromFile(filePath string) ([]string, error) {
+	bytes, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var urls []string
+	start := 0
+	content := string(bytes)
+	for i := 0; i < len(content); i++ {
+		if content[i] == '\n' {
+			line := content[start:i]
+			if len(line) > 0 && line[len(line)-1] == '\r' {
+				line = line[:len(line)-1]
+			}
+			if len(line) > 0 {
+				urls = append(urls, line)
+			}
+			start = i + 1
+		}
+	}
+
+	// 处理最后一行
+	if start < len(content) {
+		line := content[start:]
+		if len(line) > 0 && line[len(line)-1] == '\r' {
+			line = line[:len(line)-1]
+		}
+		if len(line) > 0 {
+			urls = append(urls, line)
+		}
+	}
+
+	return urls, nil
 }
 
 func checkSingleURL(url string, timeout int) CheckResult {
