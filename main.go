@@ -18,6 +18,8 @@ type CheckResult struct {
 	ErrMsg string        //失败原因，空则成功
 }
 
+var version = "0.0.0-dev"
+
 func main() {
 	concurrency := flag.Int("c", 5, "并发数（默认5）")
 	timeout := flag.Int("t", 5, "超时时间（秒，默认5）")
