@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -15,9 +17,41 @@ type CheckResult struct {
 }
 
 func main() {
-	url := "https://baidu.com"
-	result := checkSingleURL(url, 1)
-	fmt.Printf("url:[%s] code:[%d] cost:[%d] errmsg:[%s]", result.Url, result.Code, result.Cost, result.ErrMsg)
+	concurrency := flag.Int("c", 5, "并发数（默认5）")
+	timeout := flag.Int("t", 5, "超时时间（秒，默认5）")
+	flag.Parse()
+	urls := flag.Args()
+	if len(urls) == 0 {
+		fmt.Println("请传入要检测的URL，示例：go run main.go https://baidu.com https://github.com")
+		return
+	}
+
+	sem := make(chan struct{}, *concurrency)
+	resultCh := make(chan CheckResult, len(urls))
+	var wg sync.WaitGroup
+
+	for _, url := range urls {
+		sem <- struct{}{}
+		wg.Add(1)
+		go func() {
+			defer func() {
+				<-sem
+				wg.Done()
+			}()
+
+			result := checkSingleURL(url, *timeout)
+			resultCh <- result
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(resultCh)
+	}()
+
+	for result := range resultCh {
+		fmt.Printf("url:[%s] code:[%d] cost:[%d] errmsg:[%s]\n", result.Url, result.Code, result.Cost, result.ErrMsg)
+	}
 }
 
 func checkSingleURL(url string, timeout int) CheckResult {
