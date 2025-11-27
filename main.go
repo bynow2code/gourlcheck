@@ -61,7 +61,7 @@ func checkSingleURL(url string, timeout int) CheckResult {
 		Cost:   0,
 		ErrMsg: "",
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
