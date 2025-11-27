@@ -80,8 +80,12 @@ func main() {
 		}
 	} else {
 		// 打印结果
-		for result := range resultCh {
-			fmt.Printf("url:[%s] code:[%d] cost:[%d] errmsg:[%s]\n", result.Url, result.Code, result.Cost, result.ErrMsg)
+		for _, result := range results {
+			if result.ErrMsg == "" {
+				fmt.Printf(" ✅ URL:[%s] 状态码:[%d] 耗时:[%.2f ms] 失败原因:[%s]\n", result.Url, result.Code, result.Cost.Seconds()*1000, result.ErrMsg)
+			} else {
+				fmt.Printf(" ❌ URL:[%s] 状态码:[%d] 耗时:[%.2f ms] 失败原因:[%s]\n", result.Url, result.Code, result.Cost.Seconds()*1000, result.ErrMsg)
+			}
 		}
 	}
 }
@@ -93,7 +97,7 @@ func exportToCSV(results []CheckResult, filePath string) error {
 	}
 	w := csv.NewWriter(file)
 	defer w.Flush()
-	err = w.Write([]string{"url", "code", "cost", "errmsg"})
+	err = w.Write([]string{"URL", "状态码", "耗时(ms)", "失败原因"})
 	if err != nil {
 		return err
 	}
@@ -102,7 +106,7 @@ func exportToCSV(results []CheckResult, filePath string) error {
 		err = w.Write([]string{
 			result.Url,
 			fmt.Sprintf("%d", result.Code),
-			fmt.Sprintf("%.2f", result.Cost.Seconds()),
+			fmt.Sprintf("%.2f", result.Cost.Seconds()*1000),
 			result.ErrMsg,
 		})
 		if err != nil {
