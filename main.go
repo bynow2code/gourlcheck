@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/csv"
 	"flag"
 	"fmt"
 	"net/http"
@@ -21,6 +22,7 @@ func main() {
 	concurrency := flag.Int("c", 5, "并发数（默认5）")
 	timeout := flag.Int("t", 5, "超时时间（秒，默认5）")
 	inputFile := flag.String("f", "", "URL列表文件路径（每行一个URL）")
+	outputFile := flag.String("o", "", "结果导出为CSV文件路径（如 -o result.csv）")
 	flag.Parse()
 
 	var urls []string
@@ -63,9 +65,50 @@ func main() {
 		close(resultCh)
 	}()
 
+	var results []CheckResult
 	for result := range resultCh {
-		fmt.Printf("url:[%s] code:[%d] cost:[%d] errmsg:[%s]\n", result.Url, result.Code, result.Cost, result.ErrMsg)
+		results = append(results, result)
 	}
+
+	if *outputFile != "" {
+		err = exportToCSV(results, *outputFile)
+		if err != nil {
+			fmt.Printf("导出CSV失败：[%s]\n", err)
+			return
+		}
+	} else {
+		// 打印结果
+		for result := range resultCh {
+			fmt.Printf("url:[%s] code:[%d] cost:[%d] errmsg:[%s]\n", result.Url, result.Code, result.Cost, result.ErrMsg)
+		}
+	}
+}
+
+func exportToCSV(results []CheckResult, filePath string) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	w := csv.NewWriter(file)
+	defer w.Flush()
+	err = w.Write([]string{"url", "code", "cost", "errmsg"})
+	if err != nil {
+		return err
+	}
+
+	for _, result := range results {
+		err = w.Write([]string{
+			result.Url,
+			fmt.Sprintf("%d", result.Code),
+			fmt.Sprintf("%.2f", result.Cost.Seconds()),
+			result.ErrMsg,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func readURLsFromFile(filePath string) ([]string, error) {

@@ -1,0 +1,5 @@
+url,code,cost,errmsg
+https://baidu.com,200,0.29,
+https://baidu.com,200,0.30,
+http://192.168.3.1:8080,0,0.00,"发送请求错误：[Head ""http://192.168.3.1:8080"": context deadline exceeded]"
+http://192.168.3.1:8080,0,0.00,"发送请求错误：[Head ""http://192.168.3.1:8080"": context deadline exceeded]"
